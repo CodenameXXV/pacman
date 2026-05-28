@@ -32,15 +32,22 @@ canvas { border: 3px solid #2121DE; border-radius: 6px; display: block; }
 }
 
 /* ── D-PAD (mobile only) ── */
-#dpad {
+#mobileControls {
   display: none;
   margin-top: 10px;
-  position: relative;
-  width: 150px; height: 150px;
-  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
 }
 @media (max-width: 700px), (pointer: coarse) {
-  #dpad { display: grid; grid-template-columns: repeat(3,1fr); grid-template-rows: repeat(3,1fr); gap: 4px; }
+  #mobileControls { display: flex; }
+}
+#dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 48px);
+  grid-template-rows: repeat(3, 48px);
+  gap: 4px;
+  flex-shrink: 0;
 }
 .dpad-btn {
   background: rgba(255,255,255,0.08);
@@ -48,17 +55,35 @@ canvas { border: 3px solid #2121DE; border-radius: 6px; display: block; }
   border-radius: 10px;
   color: #FFD700;
   font-size: 1.4rem;
+  width: 48px; height: 48px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
   transition: background 0.1s, transform 0.08s;
-  active-state: none;
 }
 .dpad-btn:active, .dpad-btn.pressed { background: rgba(255,215,0,0.22); transform: scale(0.92); }
 .dpad-center {
-  background: transparent; border-color: transparent; pointer-events: none;
+  background: transparent !important; border-color: transparent !important; pointer-events: none;
 }
+#shootBtn {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: rgba(255,107,157,0.15);
+  border: 3px solid #FF6B9D;
+  color: #FF6B9D;
+  font-size: 1.8rem;
+  display: none;
+  align-items: center; justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background 0.1s, transform 0.08s;
+  flex-shrink: 0;
+  box-shadow: 0 0 16px #FF6B9D88;
+}
+#shootBtn.ready { display: flex; }
+#shootBtn:active { background: rgba(255,107,157,0.35); transform: scale(0.91); }
 #cherryQuizOverlay {
   display: none; position: fixed; top:0; left:0; right:0; bottom:0;
   background: rgba(0,0,0,0.93); z-index: 150; justify-content: center; align-items: center;
@@ -164,17 +189,20 @@ canvas { border: 3px solid #2121DE; border-radius: 6px; display: block; }
 <div id="controls">⬆⬇⬅➡ або WASD — рухатись &nbsp;|&nbsp; ПРОБІЛ — стріляти (якщо є сила) &nbsp;|&nbsp; M — звук вкл/викл</div>
 <div id="powerBar"></div>
 
-<!-- D-PAD for mobile -->
-<div id="dpad">
-  <div class="dpad-btn dpad-center"></div>
-  <div class="dpad-btn" id="btn-up"   ontouchstart="dpadPress(0,-1)" ontouchend="dpadRelease()" onmousedown="dpadPress(0,-1)" onmouseup="dpadRelease()">▲</div>
-  <div class="dpad-btn dpad-center"></div>
-  <div class="dpad-btn" id="btn-left" ontouchstart="dpadPress(-1,0)" ontouchend="dpadRelease()" onmousedown="dpadPress(-1,0)" onmouseup="dpadRelease()">◀</div>
-  <div class="dpad-btn dpad-center">🟡</div>
-  <div class="dpad-btn" id="btn-right"ontouchstart="dpadPress(1,0)"  ontouchend="dpadRelease()" onmousedown="dpadPress(1,0)"  onmouseup="dpadRelease()">▶</div>
-  <div class="dpad-btn dpad-center"></div>
-  <div class="dpad-btn" id="btn-down" ontouchstart="dpadPress(0,1)"  ontouchend="dpadRelease()" onmousedown="dpadPress(0,1)"  onmouseup="dpadRelease()">▼</div>
-  <div class="dpad-btn dpad-center"></div>
+<!-- Mobile controls: D-PAD + shoot button -->
+<div id="mobileControls">
+  <div id="shootBtn" ontouchstart="mobileShoot()" onmousedown="mobileShoot()">🔫</div>
+  <div id="dpad">
+    <div class="dpad-btn dpad-center"></div>
+    <div class="dpad-btn" id="btn-up"    ontouchstart="dpadPress(0,-1)" ontouchend="dpadRelease()" onmousedown="dpadPress(0,-1)" onmouseup="dpadRelease()">▲</div>
+    <div class="dpad-btn dpad-center"></div>
+    <div class="dpad-btn" id="btn-left"  ontouchstart="dpadPress(-1,0)" ontouchend="dpadRelease()" onmousedown="dpadPress(-1,0)" onmouseup="dpadRelease()">◀</div>
+    <div class="dpad-btn dpad-center">🟡</div>
+    <div class="dpad-btn" id="btn-right" ontouchstart="dpadPress(1,0)"  ontouchend="dpadRelease()" onmousedown="dpadPress(1,0)"  onmouseup="dpadRelease()">▶</div>
+    <div class="dpad-btn dpad-center"></div>
+    <div class="dpad-btn" id="btn-down"  ontouchstart="dpadPress(0,1)"  ontouchend="dpadRelease()" onmousedown="dpadPress(0,1)"  onmouseup="dpadRelease()">▼</div>
+    <div class="dpad-btn dpad-center"></div>
+  </div>
 </div>
 
 <div id="cherryQuizOverlay">
@@ -642,9 +670,11 @@ canvas.addEventListener('touchend', e => {
 // ── D-pad buttons ──
 function dpadPress(dx, dy) {
   setDir(dx, dy);
-  // also try shooting on tap of center if power active
 }
-function dpadRelease() {} // direction stays until next input
+function dpadRelease() {}
+function mobileShoot() {
+  if (gameRunning && !quizActive && !cherryQuizActive && !lightningQuizActive) shootBullet();
+}
 
 let map, score, lives, level, totalDots, dotsEaten;
 let pacman, ghosts, gameRunning, quizActive, animFrame, lastTime = 0;
@@ -832,6 +862,9 @@ function updatePowerBar() {
   if (hasSpeedBoost) parts.push(`⚡ ШВИДКІСТЬ — ${Math.ceil(speedBoostTimer)}с`);
   el.textContent = parts.join('   |   ');
   el.style.color = hasSpeedBoost ? '#FFD700' : '#FF6B9D';
+  // sync mobile shoot button
+  const sb = document.getElementById('shootBtn');
+  if (sb) sb.classList.toggle('ready', hasShotPower);
 }
 
 // ===================== LIGHTNING =====================
