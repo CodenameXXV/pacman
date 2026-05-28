@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #000;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 100vh; font-family: 'Segoe UI', Arial, sans-serif; color: #fff; overflow: hidden;
+}
+h1 { font-size: 1.6rem; margin-bottom: 4px; color: #FFD700; letter-spacing: 2px; }
+#hud { display: flex; gap: 24px; margin-bottom: 6px; font-size: 0.95rem; align-items: center; }
+#hud span { color: #FFD700; font-weight: bold; }
+#muteBtn {
+  background: #222; border: 2px solid #FFD700; color: #FFD700;
+  border-radius: 8px; padding: 4px 12px; font-size: 1rem; cursor: pointer;
+  transition: background 0.15s, transform 0.1s; font-weight: bold; letter-spacing: 1px;
+}
+#muteBtn:hover { background: #333; transform: scale(1.08); }
+#muteBtn.muted { background: #3a1a1a; border-color: #e94560; color: #e94560; }
+canvas { border: 3px solid #2121DE; border-radius: 6px; display: block; }
+#controls { margin-top: 6px; font-size: 0.75rem; color: #666; }
+#powerBar {
+  margin-top: 4px; font-size: 0.82rem; color: #FF6B9D; font-weight: bold;
+  min-height: 20px; letter-spacing: 1px; transition: opacity 0.3s;
+}
+#cherryQuizOverlay {
+  display: none; position: fixed; top:0; left:0; right:0; bottom:0;
+  background: rgba(0,0,0,0.93); z-index: 150; justify-content: center; align-items: center;
+}
+#cherryQuizOverlay.active { display: flex; }
+#cherryQuizBox {
+  background: #1a0a2e; border: 2px solid #FF6B9D; border-radius: 16px;
+  padding: 24px 28px; max-width: 480px; width: 92%; text-align: center;
+}
+#cherryQuizBox h2 { color: #FF6B9D; margin-bottom: 4px; font-size: 1.3rem; }
+#cherryQuizBox .sub { color: #aaa; margin-bottom: 14px; font-size: 0.82rem; }
+#cherryQuestionText { font-size: 1.15rem; margin-bottom: 6px; color: #fff; }
+#cherryHint { font-size: 0.82rem; color: #888; margin-bottom: 12px; font-style: italic; min-height: 18px; }
+#cherryAnswerInput {
+  width: 100%; padding: 10px 14px; border-radius: 10px; border: 2px solid #555;
+  background: #0d0d1a; color: #fff; font-size: 1.05rem; outline: none;
+  transition: border-color 0.2s; box-sizing: border-box; margin-bottom: 10px;
+}
+#cherryAnswerInput:focus { border-color: #FF6B9D; }
+#cherrySubmitBtn {
+  background: #FF6B9D; color: #000; border: none; border-radius: 10px;
+  padding: 9px 28px; font-size: 1rem; font-weight: bold; cursor: pointer;
+  transition: background 0.15s;
+}
+#cherrySubmitBtn:hover { background: #ff8fb5; }
+#cherryResult { margin-top: 12px; font-size: 1rem; font-weight: bold; min-height: 24px; }
+
+#lightningQuizOverlay {
+  display: none; position: fixed; top:0; left:0; right:0; bottom:0;
+  background: rgba(0,0,0,0.93); z-index: 150; justify-content: center; align-items: center;
+}
+#lightningQuizOverlay.active { display: flex; }
+#lightningQuizBox {
+  background: #1a1a00; border: 2px solid #FFD700; border-radius: 16px;
+  padding: 24px 28px; max-width: 480px; width: 92%; text-align: center;
+}
+#lightningQuizBox h2 { color: #FFD700; margin-bottom: 4px; font-size: 1.3rem; }
+#lightningQuizBox .sub { color: #aaa; margin-bottom: 14px; font-size: 0.82rem; }
+#lightningQuestionText { font-size: 1.15rem; margin-bottom: 6px; color: #fff; }
+#lightningHint { font-size: 0.82rem; color: #888; margin-bottom: 12px; font-style: italic; min-height: 18px; }
+#lightningAnswerInput {
+  width: 100%; padding: 10px 14px; border-radius: 10px; border: 2px solid #555;
+  background: #0d0d00; color: #fff; font-size: 1.05rem; outline: none;
+  transition: border-color 0.2s; box-sizing: border-box; margin-bottom: 10px;
+}
+#lightningAnswerInput:focus { border-color: #FFD700; }
+#lightningSubmitBtn {
+  background: #FFD700; color: #000; border: none; border-radius: 10px;
+  padding: 9px 28px; font-size: 1rem; font-weight: bold; cursor: pointer;
+  transition: background 0.15s;
+}
+#lightningSubmitBtn:hover { background: #ffe84d; }
+#lightningResult { margin-top: 12px; font-size: 1rem; font-weight: bold; min-height: 24px; }
+
+#quizOverlay {
+  display: none; position: fixed; top:0; left:0; right:0; bottom:0;
+  background: rgba(0,0,0,0.92); z-index: 100; justify-content: center; align-items: center;
+}
+#quizOverlay.active { display: flex; }
+#quizBox {
+  background: #1a1a2e; border: 2px solid #4CAF50; border-radius: 16px;
+  padding: 24px 28px; max-width: 460px; width: 90%; text-align: center; transition: border-color 0.3s;
+}
+#quizBox.wrong-shake { border-color: #e94560; animation: shake 0.4s ease; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-8px)} 40%{transform:translateX(8px)} 60%{transform:translateX(-6px)} 80%{transform:translateX(6px)} }
+#quizBox h2 { color: #4CAF50; margin-bottom: 4px; font-size: 1.2rem; }
+#quizBox .sub { color: #aaa; margin-bottom: 14px; font-size: 0.82rem; }
+#questionText { font-size: 1.2rem; margin-bottom: 16px; color: #fff; }
+#questionHint { font-size: 0.85rem; color: #888; margin-bottom: 14px; font-style: italic; }
+.answers { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.answers button {
+  background: #16213e; color: #fff; border: 2px solid #0f3460;
+  border-radius: 10px; padding: 11px 6px; font-size: 1rem; cursor: pointer; transition: all 0.15s;
+}
+.answers button:hover { background: #0f3460; border-color: #4CAF50; }
+.answers button.correct { background: #1b8a3d !important; border-color: #2ecc71 !important; }
+.answers button.wrong { background: #c0392b !important; border-color: #e74c3c !important; }
+#quizResult { margin-top: 13px; font-size: 0.95rem; font-weight: bold; min-height: 22px; }
+#livesLost { margin-top: 8px; font-size: 0.85rem; color: #e94560; min-height: 18px; }
+#gameOverOverlay {
+  display: none; position: fixed; top:0; left:0; right:0; bottom:0;
+  background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center;
+}
+#gameOverOverlay.active { display: flex; }
+#gameOverBox { text-align: center; }
+#gameOverBox h2 { font-size: 2.2rem; color: #e94560; margin-bottom: 8px; }
+#gameOverBox p { font-size: 1.1rem; margin-bottom: 18px; color: #ccc; }
+#gameOverBox button {
+  background: #FFD700; color: #000; border: none; border-radius: 10px;
+  padding: 11px 32px; font-size: 1rem; font-weight: bold; cursor: pointer;
+}
+</style>
+</head>
+<body>
+<h1>🟡 PAC-MAN ENGLISH</h1>
+<div id="hud">
+  <div>Score: <span id="scoreDisplay">0</span></div>
+  <div>Lives: <span id="livesDisplay">❤️❤️❤️</span></div>
+  <div>Level: <span id="levelDisplay">1</span></div>
+  <button id="muteBtn" onclick="toggleMute()">🔊 Звук</button>
+</div>
+<canvas id="gameCanvas"></canvas>
+<div id="controls">⬆⬇⬅➡ — рухатись &nbsp;|&nbsp; ПРОБІЛ — стріляти (якщо є сила) &nbsp;|&nbsp; M — звук вкл/викл</div>
+<div id="powerBar"></div>
+
+<div id="cherryQuizOverlay">
+  <div id="cherryQuizBox">
+    <h2>🍒 Вишенька!</h2>
+    <p class="sub">Відповідай письмово — отримаєш суперсилу на цей раунд!</p>
+    <div id="cherryQuestionText"></div>
+    <div id="cherryHint"></div>
+    <input type="text" id="cherryAnswerInput" placeholder="Type your answer in English..." autocomplete="off" />
+    <br/>
+    <button id="cherrySubmitBtn" onclick="submitCherryAnswer()">Submit ✨</button>
+    <div id="cherryResult"></div>
+  </div>
+</div>
+
+<div id="lightningQuizOverlay">
+  <div id="lightningQuizBox">
+    <h2>⚡ Молнія!</h2>
+    <p class="sub">Відповідай правильно — отримаєш буст швидкості!</p>
+    <div id="lightningQuestionText"></div>
+    <div id="lightningHint"></div>
+    <input type="text" id="lightningAnswerInput" placeholder="Type your answer in English..." autocomplete="off" />
+    <br/>
+    <button id="lightningSubmitBtn" onclick="submitLightningAnswer()">Submit ⚡</button>
+    <div id="lightningResult"></div>
+  </div>
+</div>
+
+<div id="quizOverlay">
+  <div id="quizBox">
+    <h2 id="quizTitle">👻 Упс!</h2>
+    <p class="sub">Відповідай правильно — збережеш ❤️!</p>
+    <div id="questionText"></div>
+    <div id="questionHint"></div>
+    <div class="answers" id="answersContainer"></div>
+    <div id="quizResult"></div>
+    <div id="livesLost"></div>
+  </div>
+</div>
+<div id="gameOverOverlay">
+  <div id="gameOverBox">
+    <h2>GAME OVER</h2>
+    <p>Рахунок: <span id="finalScore">0</span></p>
+    <button onclick="restartGame()">🔄 Грати знову</button>
+  </div>
+</div>
+
+<script>
+// ===================== AUDIO =====================
+let audioCtx = null;
+let muted = true;
+let wakaSide = 0;
+let sirenOsc = null, sirenGain = null;
+let scaredOsc = null, scaredGain = null;
+
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function toggleMute() {
+  muted = !muted;
+  const btn = document.getElementById('muteBtn');
+  btn.textContent = muted ? '🔇 Тихо' : '🔊 Звук';
+  btn.classList.toggle('muted', muted);
+  if (muted) { stopSiren(); stopScared(); }
+  else if (gameRunning && !quizActive && !cherryQuizActive) {
+    if (ghosts.some(g => g.scared)) startScared(); else startSiren();
+  }
+}
+
+function beep(freq, type, duration, vol, delay = 0) {
+  if (muted) return;
+  try {
+    const ac = getAudio();
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.type = type;
+    o.frequency.setValueAtTime(freq, ac.currentTime + delay);
+    g.gain.setValueAtTime(vol, ac.currentTime + delay);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + delay + duration);
+    o.start(ac.currentTime + delay);
+    o.stop(ac.currentTime + delay + duration + 0.01);
+  } catch(e) {}
+}
+
+// Pac-Man жує: чергує waka-waka (дві ноти)
+function playWaka() {
+  if (muted) return;
+  try {
+    const ac = getAudio();
+    const freq = wakaSide === 0 ? 440 : 330;
+    wakaSide = 1 - wakaSide;
+    const o = ac.createOscillator();
+    const g = ac.createGain();
+    o.connect(g); g.connect(ac.destination);
+    o.type = 'square';
+    o.frequency.setValueAtTime(freq, ac.currentTime);
+    o.frequency.exponentialRampToValueAtTime(freq * 0.5, ac.currentTime + 0.07);
+    g.gain.setValueAtTime(0.15, ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.08);
+    o.start(ac.currentTime);
+    o.stop(ac.currentTime + 0.1);
+  } catch(e) {}
+}
+
+// Їсть крапку
+function playDot() {
+  if (muted) return;
+  beep(600, 'sine', 0.04, 0.08);
+}
+
+// Їсть велику крапку (power pellet)
+function playPellet() {
+  if (muted) return;
+  [0,1,2,3].forEach(i => beep(300 + i*120, 'square', 0.08, 0.15, i*0.07));
+}
+
+// Їсть привида
+function playEatGhost() {
+  if (muted) return;
+  [0,1,2].forEach(i => beep(800 - i*200, 'sawtooth', 0.1, 0.2, i*0.08));
+}
+
+// Сирена привидів (фоновий звук) — постійний
+function startSiren() {
+  if (muted || sirenOsc) return;
+  try {
+    const ac = getAudio();
+    sirenOsc = ac.createOscillator();
+    sirenGain = ac.createGain();
+    sirenOsc.connect(sirenGain); sirenGain.connect(ac.destination);
+    sirenOsc.type = 'sawtooth';
+    sirenGain.gain.setValueAtTime(0.04, ac.currentTime);
+    // Коливання частоти для ефекту сирени
+    sirenOsc.frequency.setValueAtTime(220, ac.currentTime);
+    sirenOsc.start();
+    // Повільна модуляція через setInterval
+    sirenOsc._interval = setInterval(() => {
+      if (!sirenOsc || muted) return;
+      try {
+        const t = ac.currentTime;
+        const f = 200 + Math.sin(Date.now() / 400) * 60;
+        sirenOsc.frequency.setTargetAtTime(f, t, 0.1);
+      } catch(e) {}
+    }, 80);
+  } catch(e) {}
+}
+
+function stopSiren() {
+  if (!sirenOsc) return;
+  try {
+    clearInterval(sirenOsc._interval);
+    sirenGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
+    sirenOsc.stop(audioCtx.currentTime + 0.1);
+  } catch(e) {}
+  sirenOsc = null; sirenGain = null;
+}
+
+// Звук переляканих привидів
+function startScared() {
+  stopSiren();
+  if (muted || scaredOsc) return;
+  try {
+    const ac = getAudio();
+    scaredOsc = ac.createOscillator();
+    scaredGain = ac.createGain();
+    scaredOsc.connect(scaredGain); scaredGain.connect(ac.destination);
+    scaredOsc.type = 'square';
+    scaredGain.gain.setValueAtTime(0.05, ac.currentTime);
+    scaredOsc.frequency.setValueAtTime(150, ac.currentTime);
+    scaredOsc.start();
+    scaredOsc._interval = setInterval(() => {
+      if (!scaredOsc || muted) return;
+      try {
+        const f = 120 + Math.sin(Date.now() / 150) * 60;
+        scaredOsc.frequency.setTargetAtTime(f, audioCtx.currentTime, 0.05);
+      } catch(e) {}
+    }, 50);
+  } catch(e) {}
+}
+
+function stopScared() {
+  if (!scaredOsc) return;
+  try {
+    clearInterval(scaredOsc._interval);
+    scaredGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
+    scaredOsc.stop(audioCtx.currentTime + 0.1);
+  } catch(e) {}
+  scaredOsc = null; scaredGain = null;
+}
+
+// Смерть пакмена
+function playDeath() {
+  stopSiren(); stopScared();
+  if (muted) return;
+  const freqs = [494,440,392,349,330,294,262,220,196,165,147];
+  freqs.forEach((f, i) => beep(f, 'sawtooth', 0.09, 0.2, i * 0.07));
+}
+
+// Правильна відповідь
+function playCorrect() {
+  if (muted) return;
+  [262,330,392,523].forEach((f,i) => beep(f, 'sine', 0.15, 0.2, i*0.1));
+}
+
+// Неправильна відповідь
+function playWrong() {
+  if (muted) return;
+  [200,180,150].forEach((f,i) => beep(f, 'sawtooth', 0.15, 0.25, i*0.1));
+}
+
+// Новий рівень
+function playLevelUp() {
+  if (muted) return;
+  [523,659,784,1046].forEach((f,i) => beep(f, 'sine', 0.18, 0.25, i*0.1));
+}
+
+// Старт гри
+function playStart() {
+  if (muted) return;
+  const melody = [262,330,392,523,392,330,523];
+  melody.forEach((f,i) => beep(f, 'square', 0.15, 0.18, i*0.12));
+}
+
+// ===================== QUESTIONS =====================
+const questions = [
+  // Colors & shapes
+  { q:"🔴 Red is a...", a:["color","animal","food","number"], c:0, hint:"🎨" },
+  { q:"🟡 Yellow is a...", a:["color","fruit","city","day"], c:0, hint:"🎨" },
+  { q:"🔵 Blue is a...", a:["color","smell","taste","sound"], c:0, hint:"🎨" },
+  { q:"🟢 Green is a...", a:["color","animal","name","sport"], c:0, hint:"🎨" },
+  { q:"⬛ Black is a...", a:["color","number","food","job"], c:0, hint:"🎨" },
+  { q:"⬜ White is a...", a:["color","shape","verb","place"], c:0, hint:"🎨" },
+  { q:"A circle is a...", a:["shape","color","animal","fruit"], c:0, hint:"⭕" },
+  { q:"A triangle has ___ sides.", a:["three","four","five","two"], c:0, hint:"🔺" },
+  { q:"A square has ___ sides.", a:["four","three","six","five"], c:0, hint:"🟥" },
+
+  // Simple math
+  { q:"1 + 1 = ?", a:["two","three","one","four"], c:0, hint:"🔢" },
+  { q:"2 + 2 = ?", a:["four","five","three","six"], c:0, hint:"🔢" },
+  { q:"3 + 3 = ?", a:["six","five","seven","four"], c:0, hint:"🔢" },
+  { q:"5 + 4 = ?", a:["nine","eight","ten","seven"], c:0, hint:"🔢" },
+  { q:"10 - 3 = ?", a:["seven","six","eight","five"], c:0, hint:"🔢" },
+  { q:"4 × 2 = ?", a:["eight","six","ten","nine"], c:0, hint:"🔢" },
+  { q:"10 ÷ 2 = ?", a:["five","four","six","three"], c:0, hint:"🔢" },
+  { q:"How many hours in a day?", a:["24","12","60","7"], c:0, hint:"⏰" },
+  { q:"How many days in a week?", a:["seven","five","six","eight"], c:0, hint:"📅" },
+  { q:"How many months in a year?", a:["twelve","ten","eleven","thirteen"], c:0, hint:"📆" },
+  { q:"How many fingers on one hand?", a:["five","four","six","ten"], c:0, hint:"✋" },
+
+  // Animals
+  { q:"🐱 This is a...", a:["cat","dog","bird","fish"], c:0, hint:"Meows!" },
+  { q:"🐶 This is a...", a:["dog","cat","cow","pig"], c:0, hint:"Barks!" },
+  { q:"🐦 This is a...", a:["bird","fish","snake","frog"], c:0, hint:"Tweets!" },
+  { q:"🐟 This is a...", a:["fish","bird","cat","horse"], c:0, hint:"Swims!" },
+  { q:"🐮 This is a...", a:["cow","pig","sheep","goat"], c:0, hint:"Moos!" },
+  { q:"🐷 This is a...", a:["pig","cow","dog","rabbit"], c:0, hint:"Oinks!" },
+  { q:"🐸 This is a...", a:["frog","toad","lizard","snake"], c:0, hint:"Ribbits!" },
+  { q:"🦁 This is a...", a:["lion","tiger","bear","wolf"], c:0, hint:"Roars!" },
+  { q:"🐘 This is an...", a:["elephant","hippo","rhino","bear"], c:0, hint:"Big and grey!" },
+  { q:"🦆 This is a...", a:["duck","chicken","goose","swan"], c:0, hint:"Quacks!" },
+  { q:"A baby cat is a...", a:["kitten","puppy","calf","chick"], c:0, hint:"🐱 Baby" },
+  { q:"A baby dog is a...", a:["puppy","kitten","cub","foal"], c:0, hint:"🐶 Baby" },
+  { q:"A baby cow is a...", a:["calf","foal","lamb","chick"], c:0, hint:"🐮 Baby" },
+  { q:"A baby sheep is a...", a:["lamb","calf","foal","cub"], c:0, hint:"🐑 Baby" },
+  { q:"A baby horse is a...", a:["foal","colt","calf","pup"], c:0, hint:"🐴 Baby" },
+
+  // Food & drink
+  { q:"🍎 This is an...", a:["apple","orange","banana","grape"], c:0, hint:"🔴 Fruit" },
+  { q:"🍌 This is a...", a:["banana","apple","pear","peach"], c:0, hint:"🟡 Fruit" },
+  { q:"🍕 This is a...", a:["pizza","burger","pasta","taco"], c:0, hint:"Italian food!" },
+  { q:"🍔 This is a...", a:["burger","pizza","hotdog","wrap"], c:0, hint:"American food!" },
+  { q:"🍞 This is...", a:["bread","cake","cookie","muffin"], c:0, hint:"You make toast with it" },
+  { q:"🧀 This is...", a:["cheese","butter","milk","cream"], c:0, hint:"🐭 Mice love it" },
+  { q:"🥚 This is an...", a:["egg","onion","potato","tomato"], c:0, hint:"🐔 Chickens make it" },
+  { q:"🍦 This is an...", a:["ice cream","yogurt","cake","pudding"], c:0, hint:"Cold and sweet!" },
+  { q:"You drink water from a...", a:["glass","plate","spoon","fork"], c:0, hint:"🥤" },
+  { q:"You eat soup with a...", a:["spoon","fork","knife","straw"], c:0, hint:"🥣" },
+
+  // Body & senses
+  { q:"You ___ with your eyes.", a:["see","hear","eat","run"], c:0, hint:"👀" },
+  { q:"You ___ with your ears.", a:["hear","see","smell","taste"], c:0, hint:"👂" },
+  { q:"You ___ with your nose.", a:["smell","hear","see","feel"], c:0, hint:"👃" },
+  { q:"You walk with your...", a:["feet","hands","head","eyes"], c:0, hint:"🦶" },
+  { q:"You clap with your...", a:["hands","feet","ears","nose"], c:0, hint:"👏" },
+  { q:"You think with your...", a:["brain","heart","stomach","lungs"], c:0, hint:"🧠" },
+  { q:"You smile with your...", a:["mouth","eyes","nose","ears"], c:0, hint:"😊" },
+  { q:"How many eyes do humans have?", a:["two","one","three","four"], c:0, hint:"👀" },
+  { q:"How many ears do humans have?", a:["two","one","three","four"], c:0, hint:"👂" },
+
+  // Grammar — to be
+  { q:"I ___ a student.", a:["am","is","are","be"], c:0, hint:"I ___ happy" },
+  { q:"She ___ my friend.", a:["is","am","are","be"], c:0, hint:"She ___ nice" },
+  { q:"They ___ happy.", a:["are","is","am","be"], c:0, hint:"We ___ friends" },
+  { q:"He ___ at home.", a:["is","am","are","be"], c:0, hint:"He ___ tall" },
+  { q:"We ___ students.", a:["are","is","am","be"], c:0, hint:"You and I" },
+  { q:"It ___ a big dog.", a:["is","am","are","be"], c:0, hint:"One thing" },
+  { q:"___ you okay?", a:["Are","Is","Am","Be"], c:0, hint:"❓ Question" },
+  { q:"___ she here?", a:["Is","Are","Am","Be"], c:0, hint:"❓ One person" },
+  { q:"___ they ready?", a:["Are","Is","Am","Be"], c:0, hint:"❓ More than one" },
+
+  // Grammar — articles & prepositions
+  { q:"I have ___ apple.", a:["an","a","the","—"], c:0, hint:"🍎 Vowel sound" },
+  { q:"I have ___ dog.", a:["a","an","the","—"], c:0, hint:"🐶 Consonant sound" },
+  { q:"She lives ___ London.", a:["in","at","on","by"], c:0, hint:"🏙️ City" },
+  { q:"The book is ___ the table.", a:["on","in","at","by"], c:0, hint:"📖 Surface" },
+  { q:"I wake up ___ 7 o'clock.", a:["at","in","on","by"], c:0, hint:"⏰ Time" },
+  { q:"We go to school ___ Monday.", a:["on","in","at","by"], c:0, hint:"📅 Day" },
+
+  // Opposites
+  { q:"Opposite of 'big'?", a:["small","fast","hot","new"], c:0, hint:"🤏" },
+  { q:"Opposite of 'hot'?", a:["cold","warm","cool","wet"], c:0, hint:"🧊" },
+  { q:"Opposite of 'up'?", a:["down","left","right","back"], c:0, hint:"⬇️" },
+  { q:"Opposite of 'day'?", a:["night","week","month","dawn"], c:0, hint:"🌙" },
+  { q:"Opposite of 'fast'?", a:["slow","low","cold","small"], c:0, hint:"🐢" },
+  { q:"Opposite of 'happy'?", a:["sad","mad","bad","glad"], c:0, hint:"😢" },
+  { q:"Opposite of 'old'?", a:["young","new","fresh","early"], c:0, hint:"👶" },
+  { q:"Opposite of 'open'?", a:["closed","shut","locked","near"], c:0, hint:"🚪" },
+  { q:"Opposite of 'good'?", a:["bad","sad","ugly","wrong"], c:0, hint:"👎" },
+  { q:"Opposite of 'tall'?", a:["short","small","thin","low"], c:0, hint:"🤏 Height" },
+  { q:"Opposite of 'clean'?", a:["dirty","messy","wet","dark"], c:0, hint:"🧹" },
+
+  // Days, time & calendar
+  { q:"Today is Monday. Tomorrow is...", a:["Tuesday","Sunday","Wednesday","Friday"], c:0, hint:"📅" },
+  { q:"Today is Friday. Tomorrow is...", a:["Saturday","Sunday","Thursday","Monday"], c:0, hint:"📅" },
+  { q:"The first month of the year is...", a:["January","February","March","April"], c:0, hint:"🎆 New Year" },
+  { q:"The last month of the year is...", a:["December","November","October","January"], c:0, hint:"🎄 Christmas" },
+  { q:"How many days in a weekend?", a:["two","one","three","four"], c:0, hint:"Sat + Sun" },
+
+  // Objects & places
+  { q:"🏠 This is a...", a:["house","tree","cloud","star"], c:0, hint:"🏡 Home" },
+  { q:"🚗 This is a...", a:["car","bus","train","bike"], c:0, hint:"🚙 Vehicle" },
+  { q:"✏️ This is a...", a:["pencil","pen","brush","ruler"], c:0, hint:"You draw with it" },
+  { q:"📚 These are...", a:["books","papers","cards","bags"], c:0, hint:"You read them" },
+  { q:"🎒 This is a...", a:["backpack","suitcase","purse","bag"], c:0, hint:"Students carry it" },
+  { q:"🪑 This is a...", a:["chair","table","desk","bench"], c:0, hint:"You sit on it" },
+  { q:"🛏️ This is a...", a:["bed","sofa","mat","bench"], c:0, hint:"You sleep in it" },
+  { q:"🚪 This is a...", a:["door","window","wall","gate"], c:0, hint:"You open it to enter" },
+  { q:"You study at a...", a:["school","hospital","store","park"], c:0, hint:"📚" },
+  { q:"A doctor works in a...", a:["hospital","school","bank","shop"], c:0, hint:"🏥" },
+
+  // Family
+  { q:"Your mother's son is your...", a:["brother","sister","father","uncle"], c:0, hint:"👨" },
+  { q:"Your father's daughter is your...", a:["sister","brother","mother","aunt"], c:0, hint:"👧" },
+  { q:"Your mother's mother is your...", a:["grandmother","aunt","sister","cousin"], c:0, hint:"👵" },
+  { q:"Your father's brother is your...", a:["uncle","cousin","brother","grandpa"], c:0, hint:"👨 Family" },
+
+  // Weather & nature
+  { q:"☀️ The weather is...", a:["sunny","rainy","snowy","windy"], c:0, hint:"☀️" },
+  { q:"🌧️ The weather is...", a:["rainy","sunny","cloudy","windy"], c:0, hint:"☔" },
+  { q:"❄️ The weather is...", a:["snowy","sunny","hot","dry"], c:0, hint:"☃️" },
+  { q:"Water comes from...", a:["rain","fire","earth","wind"], c:0, hint:"💧" },
+  { q:"The sun rises in the...", a:["east","west","north","south"], c:0, hint:"🌅" },
+  { q:"Trees grow from...", a:["seeds","eggs","stones","shells"], c:0, hint:"🌱" },
+
+  // Verbs & actions
+  { q:"You read a...", a:["book","spoon","shoe","ball"], c:0, hint:"📖" },
+  { q:"You wear ___ on your feet.", a:["shoes","gloves","hat","scarf"], c:0, hint:"👟" },
+  { q:"You wear ___ on your head.", a:["hat","scarf","glove","sock"], c:0, hint:"🎩" },
+  { q:"You use an umbrella when it...", a:["rains","snows","shines","windy"], c:0, hint:"☂️" },
+  { q:"You use a pen to...", a:["write","eat","cut","draw water"], c:0, hint:"✍️" },
+  { q:"You use a knife to...", a:["cut","write","eat soup","sweep"], c:0, hint:"🔪" },
+  { q:"Birds can...", a:["fly","swim","bark","roar"], c:0, hint:"🐦" },
+  { q:"Fish can...", a:["swim","fly","bark","meow"], c:0, hint:"🐟" },
+];
+
+// ===================== CHERRY QUESTIONS (written answer) =====================
+const cherryQuestions = [
+  { q: "What is the capital of France?", answer: ["paris"], hint: "🗼 European city" },
+  { q: "How many legs does a spider have?", answer: ["eight","8"], hint: "🕷️ Count carefully" },
+  { q: "What color do you get mixing blue and yellow?", answer: ["green"], hint: "🎨 Primary mix" },
+  { q: "What is 7 × 8?", answer: ["56","fifty-six","fifty six"], hint: "🔢 Multiplication" },
+  { q: "What animal is the king of the jungle?", answer: ["lion"], hint: "🦁 Roars loudly" },
+  { q: "How many days are in a week?", answer: ["seven","7"], hint: "📅 Mon to Sun" },
+  { q: "What is the opposite of 'ancient'?", answer: ["modern","new","recent"], hint: "🕰️ Think time" },
+  { q: "What gas do plants absorb from the air?", answer: ["carbon dioxide","co2"], hint: "🌿 Photosynthesis" },
+  { q: "What is the fastest land animal?", answer: ["cheetah"], hint: "🐆 Africa, spots" },
+  { q: "How many continents are there on Earth?", answer: ["seven","7"], hint: "🌍 Count them all" },
+  { q: "What do bees produce?", answer: ["honey"], hint: "🍯 Sweet and golden" },
+  { q: "What is the largest planet in our solar system?", answer: ["jupiter"], hint: "🪐 Big gas giant" },
+  { q: "What is the past tense of 'run'?", answer: ["ran"], hint: "🏃 He ___ fast" },
+  { q: "What is H2O?", answer: ["water"], hint: "💧 You drink it" },
+  { q: "In which season do leaves fall from trees?", answer: ["autumn","fall"], hint: "🍂 Before winter" },
+  { q: "What instrument has 88 keys?", answer: ["piano"], hint: "🎹 Black and white" },
+  { q: "What is the plural of 'mouse'?", answer: ["mice"], hint: "🐭 More than one" },
+  { q: "What is 100 divided by 4?", answer: ["25","twenty-five","twenty five"], hint: "🔢 Division" },
+  { q: "Which ocean is the largest?", answer: ["pacific","pacific ocean"], hint: "🌊 Pacific..." },
+  { q: "What do you call a person who writes books?", answer: ["author","writer"], hint: "✍️ Creates stories" },
+];
+
+
+const TILE = 20, COLS = 28, ROWS = 31;
+const MAP_TEMPLATE = [
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1],
+  [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
+  [1,3,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,3,1],
+  [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
+  [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+  [1,2,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,2,1],
+  [1,2,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,2,1],
+  [1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,2,2,1],
+  [1,1,1,1,1,1,2,1,1,1,1,1,4,1,1,4,1,1,1,1,1,2,1,1,1,1,1,1],
+  [0,0,0,0,0,1,2,1,1,1,1,1,4,1,1,4,1,1,1,1,1,2,1,0,0,0,0,0],
+  [0,0,0,0,0,1,2,1,1,4,4,4,4,4,4,4,4,4,4,1,1,2,1,0,0,0,0,0],
+  [0,0,0,0,0,1,2,1,1,4,1,1,1,0,0,1,1,1,4,1,1,2,1,0,0,0,0,0],
+  [1,1,1,1,1,1,2,1,1,4,1,0,0,0,0,0,0,1,4,1,1,2,1,1,1,1,1,1],
+  [4,4,4,4,4,4,2,4,4,4,1,0,0,0,0,0,0,1,4,4,4,2,4,4,4,4,4,4],
+  [1,1,1,1,1,1,2,1,1,4,1,0,0,0,0,0,0,1,4,1,1,2,1,1,1,1,1,1],
+  [0,0,0,0,0,1,2,1,1,4,1,1,1,1,1,1,1,1,4,1,1,2,1,0,0,0,0,0],
+  [0,0,0,0,0,1,2,1,1,4,4,4,4,4,4,4,4,4,4,1,1,2,1,0,0,0,0,0],
+  [0,0,0,0,0,1,2,1,1,4,1,1,1,1,1,1,1,1,4,1,1,2,1,0,0,0,0,0],
+  [1,1,1,1,1,1,2,1,1,4,1,1,1,1,1,1,1,1,4,1,1,2,1,1,1,1,1,1],
+  [1,2,2,2,2,2,2,2,2,2,2,2,2,1,1,2,2,2,2,2,2,2,2,2,2,2,2,1],
+  [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
+  [1,2,1,1,1,1,2,1,1,1,1,1,2,1,1,2,1,1,1,1,1,2,1,1,1,1,2,1],
+  [1,3,2,2,1,1,2,2,2,2,2,2,2,4,4,2,2,2,2,2,2,2,1,1,2,2,3,1],
+  [1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,1,1,1],
+  [1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,1,1,1,2,1,1,2,1,1,2,1,1,1],
+  [1,2,2,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,1,1,2,2,2,2,2,2,1],
+  [1,2,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,2,1],
+  [1,2,1,1,1,1,1,1,1,1,1,1,2,1,1,2,1,1,1,1,1,1,1,1,1,1,2,1],
+  [1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+];
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = COLS * TILE; canvas.height = ROWS * TILE;
+
+let map, score, lives, level, totalDots, dotsEaten;
+let pacman, ghosts, gameRunning, quizActive, animFrame, lastTime = 0;
+let mouthAngle = 0, mouthDir = 1;
+let anyScared = false;
+let wakaTimer = 0;
+// Cherry + shooting power
+let cherries = [];
+let cherryQuizActive = false;
+let currentCherryQ = null;
+let hasShotPower = false;
+let bullets = [];
+let bulletCooldown = 0;
+let powerBarTimer = 0;
+// Lightning + speed boost
+let lightnings = [];
+let lightningQuizActive = false;
+let currentLightningQ = null;
+let hasSpeedBoost = false;
+let speedBoostTimer = 0;
+const SPEED_BOOST_DURATION = 12; // seconds
+const PACMAN_SPEED_BOOSTED = 13.5;
+
+const PACMAN_SPEED = 7.5;
+const GHOST_SPEED_BASE = 4.5;
+
+function isWall(x, y) {
+  if (y < 0 || y >= ROWS) return true;
+  return map[y][((x % COLS) + COLS) % COLS] === 1;
+}
+function wrapX(x) { return ((x % COLS) + COLS) % COLS; }
+
+function cellPx(fromX, toX, progress) {
+  const diff = toX - fromX;
+  if (Math.abs(diff) > 1) {
+    return progress < 0.5
+      ? fromX * TILE + TILE/2 + progress * TILE * Math.sign(diff)
+      : toX * TILE + TILE/2 - (1-progress) * TILE * Math.sign(diff);
+  }
+  return (fromX + progress * diff) * TILE + TILE/2;
+}
+
+function createPacman() {
+  return { x:14, y:23, px:14*TILE+TILE/2, py:23*TILE+TILE/2, dx:0, dy:0, nextDx:0, nextDy:0, targetX:14, targetY:23, prevX:14, progress:1 };
+}
+const GHOST_COLORS = ['#FF0000','#FFB8FF','#00FFFF','#FFB852'];
+const GHOST_STARTS = [{x:13,y:13},{x:14,y:13},{x:13,y:14},{x:14,y:14}];
+function createGhost(idx) {
+  const s = GHOST_STARTS[idx];
+  return { x:s.x, y:s.y, px:s.x*TILE+TILE/2, py:s.y*TILE+TILE/2, dx:0, dy:-1, targetX:s.x, targetY:s.y, prevX:s.x, progress:1, color:GHOST_COLORS[idx], scared:false, scaredTimer:0, speed:GHOST_SPEED_BASE+level*0.3 };
+}
+
+function initLevel() {
+  map = MAP_TEMPLATE.map(r => [...r]);
+  totalDots = dotsEaten = 0;
+  for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) if (map[r][c]===2||map[r][c]===3) totalDots++;
+  pacman = createPacman();
+  ghosts = [0,1,2,3].map(i => createGhost(i));
+  gameRunning = true; quizActive = false; anyScared = false;
+  cherries = []; bullets = []; bulletCooldown = 0;
+  hasShotPower = false; powerBarTimer = 0;
+  lightnings = []; hasSpeedBoost = false; speedBoostTimer = 0;
+  spawnCherry();
+  spawnLightning();
+  updateHUD(); updatePowerBar();
+}
+
+// ===================== CHERRY =====================
+function spawnCherry() {
+  // Pick a random ghost position as base, but place on an open cell nearby
+  const candidates = [];
+  for (let r=2; r<ROWS-2; r++) {
+    for (let c=2; c<COLS-2; c++) {
+      if (map[r][c] === 4 || map[r][c] === 2) candidates.push({x:c,y:r});
+    }
+  }
+  if (!candidates.length) return;
+  const pos = candidates[Math.floor(Math.random() * candidates.length)];
+  cherries.push({ x: pos.x, y: pos.y, px: pos.x*TILE+TILE/2, py: pos.y*TILE+TILE/2, anim: 0 });
+}
+
+function updateCherries() {
+  cherries.forEach(ch => { ch.anim = (ch.anim + 0.08) % (Math.PI * 2); });
+  for (let i = cherries.length - 1; i >= 0; i--) {
+    const ch = cherries[i];
+    const dx = ch.px - pacman.px, dy = ch.py - pacman.py;
+    if (Math.sqrt(dx*dx + dy*dy) < TILE * 0.9) {
+      cherries.splice(i, 1);
+      playCherryPickup();
+      showCherryQuiz();
+    }
+  }
+}
+
+function drawCherries() {
+  cherries.forEach(ch => {
+    const bob = Math.sin(ch.anim) * 3;
+    const cx = ch.px, cy = ch.py + bob;
+    // Two red circles (cherry balls)
+    ctx.fillStyle = '#CC1100';
+    ctx.beginPath(); ctx.arc(cx - 4, cy + 2, 5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + 4, cy + 2, 5, 0, Math.PI*2); ctx.fill();
+    // Stems
+    ctx.strokeStyle = '#228B22'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(cx - 4, cy - 3); ctx.quadraticCurveTo(cx, cy - 10, cx + 4, cy - 3); ctx.stroke();
+    // Highlight
+    ctx.fillStyle = 'rgba(255,100,100,0.55)';
+    ctx.beginPath(); ctx.arc(cx - 5, cy + 1, 2, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + 3, cy + 1, 2, 0, Math.PI*2); ctx.fill();
+    // Glow ring
+    ctx.strokeStyle = 'rgba(255,100,180,0.5)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cx, cy + 2, 11, 0, Math.PI*2); ctx.stroke();
+  });
+}
+
+function playCherryPickup() {
+  if (muted) return;
+  [523,659,784,1047,784,1047].forEach((f,i) => beep(f, 'sine', 0.12, 0.22, i*0.07));
+}
+
+function playShoot() {
+  if (muted) return;
+  beep(900, 'square', 0.06, 0.18);
+  beep(1200, 'square', 0.04, 0.1, 0.05);
+}
+
+function playKillByBullet() {
+  if (muted) return;
+  [600,400,200].forEach((f,i) => beep(f, 'sawtooth', 0.1, 0.22, i*0.07));
+}
+
+function showCherryQuiz() {
+  cherryQuizActive = true;
+  gameRunning = false;
+  stopSiren(); stopScared();
+  const q = cherryQuestions[Math.floor(Math.random() * cherryQuestions.length)];
+  currentCherryQ = q;
+  document.getElementById('cherryQuestionText').textContent = q.q;
+  document.getElementById('cherryHint').textContent = q.hint || '';
+  document.getElementById('cherryAnswerInput').value = '';
+  document.getElementById('cherryResult').textContent = '';
+  document.getElementById('cherryAnswerInput').style.borderColor = '#555';
+  document.getElementById('cherryQuizOverlay').classList.add('active');
+  setTimeout(() => document.getElementById('cherryAnswerInput').focus(), 100);
+}
+
+function submitCherryAnswer() {
+  if (!currentCherryQ) return;
+  const val = document.getElementById('cherryAnswerInput').value.trim().toLowerCase();
+  const correct = currentCherryQ.answer.some(a => a === val || val.includes(a) || a.includes(val) && val.length >= 3);
+  const resultEl = document.getElementById('cherryResult');
+  const inputEl = document.getElementById('cherryAnswerInput');
+  if (correct) {
+    inputEl.style.borderColor = '#4CAF50';
+    resultEl.style.color = '#4CAF50';
+    resultEl.textContent = '✅ Correct! 🔫 Shoot with SPACE this round!';
+    hasShotPower = true;
+    powerBarTimer = 999; // lasts whole round
+    updatePowerBar();
+    playCorrect();
+    setTimeout(closeCherryQuiz, 1400);
+  } else {
+    inputEl.style.borderColor = '#e94560';
+    resultEl.style.color = '#e94560';
+    resultEl.textContent = `❌ Wrong! Answer: "${currentCherryQ.answer[0]}"`;
+    hasShotPower = false;
+    updatePowerBar();
+    playWrong();
+    setTimeout(closeCherryQuiz, 2000);
+  }
+}
+
+function closeCherryQuiz() {
+  document.getElementById('cherryQuizOverlay').classList.remove('active');
+  cherryQuizActive = false;
+  gameRunning = true;
+  if (!muted) startSiren();
+}
+
+function updatePowerBar() {
+  const el = document.getElementById('powerBar');
+  const parts = [];
+  if (hasShotPower) parts.push('🔫 СТРІЛЬБА — ПРОБІЛ');
+  if (hasSpeedBoost) parts.push(`⚡ ШВИДКІСТЬ — ${Math.ceil(speedBoostTimer)}с`);
+  el.textContent = parts.join('   |   ');
+  el.style.color = hasSpeedBoost ? '#FFD700' : '#FF6B9D';
+}
+
+// ===================== LIGHTNING =====================
+function spawnLightning() {
+  const candidates = [];
+  for (let r = 1; r < ROWS - 1; r++) {
+    for (let c = 1; c < COLS - 1; c++) {
+      const v = map[r][c];
+      if (v === 2 || v === 3 || v === 4) candidates.push({x:c, y:r});
+    }
+  }
+  if (!candidates.length) return;
+  // Try to pick a spot far from pacman start and cherries
+  let best = null, bestScore = -1;
+  for (let attempt = 0; attempt < 30; attempt++) {
+    const cand = candidates[Math.floor(Math.random() * candidates.length)];
+    const distPac = Math.abs(cand.x - 14) + Math.abs(cand.y - 23);
+    const distCherry = cherries.length
+      ? Math.min(...cherries.map(ch => Math.abs(ch.x - cand.x) + Math.abs(ch.y - cand.y)))
+      : 99;
+    const score = distPac + distCherry;
+    if (score > bestScore) { bestScore = score; best = cand; }
+  }
+  const pos = best || candidates[Math.floor(Math.random() * candidates.length)];
+  lightnings.push({ x: pos.x, y: pos.y, px: pos.x*TILE+TILE/2, py: pos.y*TILE+TILE/2, anim: 0 });
+}
+
+function updateLightnings(dt) {
+  lightnings.forEach(l => { l.anim = (l.anim + 0.1) % (Math.PI * 2); });
+  for (let i = lightnings.length - 1; i >= 0; i--) {
+    const l = lightnings[i];
+    const dx = l.px - pacman.px, dy = l.py - pacman.py;
+    if (Math.sqrt(dx*dx + dy*dy) < TILE * 0.9) {
+      lightnings.splice(i, 1);
+      playLightningPickup();
+      showLightningQuiz();
+    }
+  }
+  // Tick speed boost timer
+  if (hasSpeedBoost) {
+    speedBoostTimer -= dt;
+    if (speedBoostTimer <= 0) {
+      hasSpeedBoost = false;
+      speedBoostTimer = 0;
+    }
+    updatePowerBar();
+  }
+}
+
+function drawLightnings() {
+  lightnings.forEach(l => {
+    const pulse = 0.7 + 0.3 * Math.abs(Math.sin(l.anim * 4));
+    const cx = Math.round(l.px), cy = Math.round(l.py);
+
+    // Draw glow circle underneath
+    ctx.save();
+    ctx.globalAlpha = 0.35 * pulse;
+    ctx.fillStyle = '#FFE000';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // Bold lightning bolt — outer yellow
+    ctx.fillStyle = '#FFD700';
+    ctx.beginPath();
+    ctx.moveTo(cx + 5,  cy - 11);
+    ctx.lineTo(cx - 1,  cy - 1);
+    ctx.lineTo(cx + 3,  cy - 1);
+    ctx.lineTo(cx - 5,  cy + 11);
+    ctx.lineTo(cx + 1,  cy + 1);
+    ctx.lineTo(cx - 3,  cy + 1);
+    ctx.closePath();
+    ctx.fill();
+
+    // Inner white core
+    ctx.fillStyle = `rgba(255,255,255,${0.85 * pulse})`;
+    ctx.beginPath();
+    ctx.moveTo(cx + 3,  cy - 8);
+    ctx.lineTo(cx,      cy - 1);
+    ctx.lineTo(cx + 2,  cy - 1);
+    ctx.lineTo(cx - 3,  cy + 8);
+    ctx.lineTo(cx,      cy + 1);
+    ctx.lineTo(cx - 2,  cy + 1);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+  });
+}
+
+function playLightningPickup() {
+  if (muted) return;
+  [330, 440, 660, 880, 1100].forEach((f, i) => beep(f, 'square', 0.09, 0.2, i * 0.055));
+}
+
+function showLightningQuiz() {
+  lightningQuizActive = true;
+  gameRunning = false;
+  stopSiren(); stopScared();
+  const q = cherryQuestions[Math.floor(Math.random() * cherryQuestions.length)];
+  currentLightningQ = q;
+  document.getElementById('lightningQuestionText').textContent = q.q;
+  document.getElementById('lightningHint').textContent = q.hint || '';
+  document.getElementById('lightningAnswerInput').value = '';
+  document.getElementById('lightningResult').textContent = '';
+  document.getElementById('lightningAnswerInput').style.borderColor = '#555';
+  document.getElementById('lightningQuizOverlay').classList.add('active');
+  setTimeout(() => document.getElementById('lightningAnswerInput').focus(), 100);
+}
+
+function submitLightningAnswer() {
+  if (!currentLightningQ) return;
+  const val = document.getElementById('lightningAnswerInput').value.trim().toLowerCase();
+  const correct = currentLightningQ.answer.some(a => a === val || (val.includes(a) && val.length >= 3) || (a.includes(val) && val.length >= 3));
+  const resultEl = document.getElementById('lightningResult');
+  const inputEl = document.getElementById('lightningAnswerInput');
+  if (correct) {
+    inputEl.style.borderColor = '#FFD700';
+    resultEl.style.color = '#FFD700';
+    resultEl.textContent = `✅ Correct! ⚡ Speed boost for ${SPEED_BOOST_DURATION}s!`;
+    hasSpeedBoost = true;
+    speedBoostTimer = SPEED_BOOST_DURATION;
+    updatePowerBar();
+    playCorrect();
+    setTimeout(closeLightningQuiz, 1400);
+  } else {
+    inputEl.style.borderColor = '#e94560';
+    resultEl.style.color = '#e94560';
+    resultEl.textContent = `❌ Wrong! Answer: "${currentLightningQ.answer[0]}"`;
+    hasSpeedBoost = false;
+    updatePowerBar();
+    playWrong();
+    setTimeout(closeLightningQuiz, 2000);
+  }
+}
+
+function closeLightningQuiz() {
+  document.getElementById('lightningQuizOverlay').classList.remove('active');
+  lightningQuizActive = false;
+  gameRunning = true;
+  if (!muted) startSiren();
+}
+
+
+const BULLET_SPEED = 14;
+
+function shootBullet() {
+  if (!hasShotPower || bulletCooldown > 0) return;
+  const p = pacman;
+  let dx = p.dx || p.nextDx;
+  let dy = p.dy || p.nextDy;
+  if (dx === 0 && dy === 0) { dx = 1; }
+  bullets.push({ px: p.px, py: p.py, dx, dy });
+  bulletCooldown = 0.25;
+  playShoot();
+}
+
+function updateBullets(dt) {
+  if (bulletCooldown > 0) bulletCooldown -= dt;
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    const b = bullets[i];
+    b.px += b.dx * BULLET_SPEED;
+    b.py += b.dy * BULLET_SPEED;
+    // Remove if out of bounds
+    if (b.px < 0 || b.px > canvas.width || b.py < 0 || b.py > canvas.height) {
+      bullets.splice(i, 1); continue;
+    }
+    // Check wall collision
+    const bCol = Math.floor(b.px / TILE), bRow = Math.floor(b.py / TILE);
+    if (isWall(bCol, bRow)) { bullets.splice(i, 1); continue; }
+    // Check ghost hit
+    let hit = false;
+    for (let j = ghosts.length - 1; j >= 0; j--) {
+      const g = ghosts[j];
+      const gdx = g.px - b.px, gdy = g.py - b.py;
+      if (Math.sqrt(gdx*gdx + gdy*gdy) < TILE * 0.75) {
+        playKillByBullet();
+        score += 300; updateHUD();
+        const s = GHOST_STARTS[j];
+        g.x=s.x;g.y=s.y;g.prevX=s.x;g.px=s.x*TILE+TILE/2;g.py=s.y*TILE+TILE/2;
+        g.scared=false;g.progress=1;g.targetX=s.x;g.targetY=s.y;
+        bullets.splice(i, 1); hit = true; break;
+      }
+    }
+    if (hit) continue;
+  }
+}
+
+function drawBullets() {
+  bullets.forEach(b => {
+    ctx.save();
+    ctx.shadowColor = '#FF6B9D';
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = '#FF6B9D';
+    ctx.beginPath();
+    ctx.arc(b.px, b.py, 4, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(b.px, b.py, 2, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  });
+}
+
+
+function startGame() {
+  score=0; lives=3; level=1;
+  initLevel();
+  document.getElementById('gameOverOverlay').classList.remove('active');
+  document.getElementById('quizOverlay').classList.remove('active');
+  lastTime=0;
+  const btn = document.getElementById('muteBtn');
+  btn.textContent = muted ? '🔇 Тихо' : '🔊 Звук';
+  btn.classList.toggle('muted', muted);
+  setTimeout(() => { if (!muted) startSiren(); }, 900);
+  requestAnimationFrame(gameLoop);
+}
+function restartGame() { if (animFrame) cancelAnimationFrame(animFrame); stopSiren(); stopScared(); startGame(); }
+
+function updateHUD() {
+  document.getElementById('scoreDisplay').textContent = score;
+  document.getElementById('livesDisplay').textContent = lives > 0 ? '❤️'.repeat(lives) : '💀';
+  document.getElementById('levelDisplay').textContent = level;
+}
+function setDir(dx,dy) { if (!gameRunning||quizActive||cherryQuizActive||lightningQuizActive) return; pacman.nextDx=dx; pacman.nextDy=dy; }
+document.addEventListener('keydown', e => {
+  const dirs={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]};
+  if (dirs[e.key]) { setDir(...dirs[e.key]); e.preventDefault(); }
+  if (e.key === 'm' || e.key === 'M') { toggleMute(); }
+  if (e.key === ' ' || e.code === 'Space') {
+    e.preventDefault();
+    if (gameRunning && !quizActive && !cherryQuizActive && !lightningQuizActive) shootBullet();
+  }
+  if (e.key === 'Enter' && cherryQuizActive) { submitCherryAnswer(); }
+  if (e.key === 'Enter' && lightningQuizActive) { submitLightningAnswer(); }
+});
+
+function updatePacman(dt) {
+  const p = pacman;
+  const moving = (p.dx !== 0 || p.dy !== 0) || (p.nextDx !== 0 || p.nextDy !== 0);
+  p.progress += (hasSpeedBoost ? PACMAN_SPEED_BOOSTED : PACMAN_SPEED) * dt;
+
+  while (p.progress >= 1) {
+    p.progress -= 1;
+    p.prevX = p.x; p.x = p.targetX; p.y = p.targetY;
+    const cell = map[p.y]?.[p.x];
+    if (cell === 2) {
+      map[p.y][p.x] = 4; score += 10; dotsEaten++;
+      playDot(); updateHUD();
+    }
+    if (cell === 3) {
+      map[p.y][p.x] = 4; score += 50; dotsEaten++;
+      playPellet();
+      ghosts.forEach(g => { g.scared = true; g.scaredTimer = 300; });
+      updateHUD();
+    }
+    if (dotsEaten >= totalDots) {
+      playLevelUp();
+      stopSiren(); stopScared();
+      level++; initLevel();
+      setTimeout(() => { if (!muted) startSiren(); }, 300);
+      return;
+    }
+    if (!isWall(wrapX(p.x+p.nextDx), p.y+p.nextDy)) { p.dx=p.nextDx; p.dy=p.nextDy; }
+    const nx=wrapX(p.x+p.dx), ny=p.y+p.dy;
+    if (!isWall(nx,ny)) { p.prevX=p.x; p.targetX=nx; p.targetY=ny; }
+    else { p.targetX=p.x; p.targetY=p.y; }
+  }
+  p.px = cellPx(p.x, p.targetX, p.progress);
+  p.py = (p.y + p.progress*(p.targetY-p.y))*TILE+TILE/2;
+
+  if (p.dx!==0||p.dy!==0) {
+    mouthAngle += 5.5*dt*mouthDir;
+    if (mouthAngle>0.38) mouthDir=-1;
+    if (mouthAngle<0.04) mouthDir=1;
+
+    // waka-waka кожні ~0.18с під час руху
+    wakaTimer -= dt;
+    if (wakaTimer <= 0) { playWaka(); wakaTimer = 0.18; }
+  } else {
+    wakaTimer = 0;
+  }
+}
+
+function ghostAI(g) {
+  let dirs=[{dx:0,dy:-1},{dx:0,dy:1},{dx:-1,dy:0},{dx:1,dy:0}].filter(d=>!(d.dx===-g.dx&&d.dy===-g.dy));
+  let valid=dirs.filter(d=>!isWall(wrapX(g.x+d.dx),g.y+d.dy));
+  if(!valid.length) valid=[{dx:-g.dx,dy:-g.dy}];
+  if(g.scared||Math.random()<0.25){const d=valid[Math.floor(Math.random()*valid.length)];g.dx=d.dx;g.dy=d.dy;}
+  else{let best=valid[0],bestDist=Infinity;valid.forEach(d=>{const nx=wrapX(g.x+d.dx),ny=g.y+d.dy,dist=Math.abs(nx-pacman.x)+Math.abs(ny-pacman.y);if(dist<bestDist){bestDist=dist;best=d;}});g.dx=best.dx;g.dy=best.dy;}
+  g.prevX=g.x; g.targetX=wrapX(g.x+g.dx); g.targetY=g.y+g.dy;
+}
+
+function updateGhost(g,dt) {
+  if(g.scared){g.scaredTimer-=dt*60;if(g.scaredTimer<=0)g.scared=false;}
+  g.progress+=g.speed*dt;
+  while(g.progress>=1){g.progress-=1;g.prevX=g.x;g.x=g.targetX;g.y=g.targetY;ghostAI(g);}
+  g.px=cellPx(g.x,g.targetX,g.progress);
+  g.py=(g.y+g.progress*(g.targetY-g.y))*TILE+TILE/2;
+}
+
+function checkCollisions() {
+  // Перевіряємо чи всі привиди злякані
+  const nowScared = ghosts.some(g => g.scared);
+  if (nowScared !== anyScared) {
+    anyScared = nowScared;
+    if (nowScared) { stopSiren(); startScared(); }
+    else { stopScared(); if (!muted) startSiren(); }
+  }
+
+  ghosts.forEach(g => {
+    const dx=g.px-pacman.px, dy=g.py-pacman.py;
+    if (Math.sqrt(dx*dx+dy*dy) < TILE*0.85) {
+      if (g.scared) {
+        playEatGhost();
+        score+=200; updateHUD();
+        const s=GHOST_STARTS[ghosts.indexOf(g)];
+        g.x=s.x;g.y=s.y;g.prevX=s.x;g.px=s.x*TILE+TILE/2;g.py=s.y*TILE+TILE/2;
+        g.scared=false;g.progress=1;g.targetX=s.x;g.targetY=s.y;
+      } else { pacmanCaught(); }
+    }
+  });
+}
+
+function draw() {
+  ctx.fillStyle='#000';ctx.fillRect(0,0,canvas.width,canvas.height);
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const x=c*TILE,y=r*TILE,v=map[r][c];
+    if(v===1){ctx.fillStyle='#2121DE';ctx.fillRect(x,y,TILE,TILE);ctx.fillStyle='#1919AA';ctx.fillRect(x+2,y+2,TILE-4,TILE-4);}
+    else if(v===2){ctx.fillStyle='#FFB8AE';ctx.beginPath();ctx.arc(x+TILE/2,y+TILE/2,3,0,Math.PI*2);ctx.fill();}
+    else if(v===3){ctx.fillStyle='#FFB8AE';ctx.beginPath();ctx.arc(x+TILE/2,y+TILE/2,7,0,Math.PI*2);ctx.fill();}
+  }
+  ctx.fillStyle='#FFD70022';
+  ctx.fillRect(0,14*TILE,5*TILE,TILE);
+  ctx.fillRect((COLS-5)*TILE,14*TILE,5*TILE,TILE);
+
+  const p=pacman;
+  const angle=p.dx===1?0:p.dx===-1?Math.PI:p.dy===-1?-Math.PI/2:p.dy===1?Math.PI/2:0;
+  ctx.fillStyle='#FFFF00';ctx.beginPath();
+  ctx.arc(p.px,p.py,TILE/2-1,angle+mouthAngle,angle+Math.PI*2-mouthAngle);
+  ctx.lineTo(p.px,p.py);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#000';ctx.beginPath();ctx.arc(p.px+Math.cos(angle-0.5)*5,p.py+Math.sin(angle-0.5)*5,2,0,Math.PI*2);ctx.fill();
+
+  ghosts.forEach(g=>{
+    const flash=g.scared&&g.scaredTimer<120&&(Math.floor(g.scaredTimer/10)%2===0);
+    ctx.fillStyle=g.scared?(flash?'#fff':'#2121DE'):g.color;
+    ctx.beginPath();ctx.arc(g.px,g.py-3,TILE/2-2,Math.PI,0);
+    ctx.lineTo(g.px+TILE/2-2,g.py+TILE/2-2);
+    for(let i=3;i>=-3;i--)ctx.lineTo(g.px+(i*(TILE/2-2))/3,g.py+TILE/2-2+(i%2?2:-2));
+    ctx.closePath();ctx.fill();
+    if(g.scared){ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(g.px-4,g.py-4,2,0,Math.PI*2);ctx.arc(g.px+4,g.py-4,2,0,Math.PI*2);ctx.fill();}
+    else{
+      ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(g.px-4,g.py-4,4,0,Math.PI*2);ctx.arc(g.px+4,g.py-4,4,0,Math.PI*2);ctx.fill();
+      const pdx=pacman.px-g.px,pdy=pacman.py-g.py,pl=Math.sqrt(pdx*pdx+pdy*pdy)||1;
+      ctx.fillStyle='#00f';ctx.beginPath();
+      ctx.arc(g.px-4+(pdx/pl)*2,g.py-4+(pdy/pl)*2,2,0,Math.PI*2);
+      ctx.arc(g.px+4+(pdx/pl)*2,g.py-4+(pdy/pl)*2,2,0,Math.PI*2);ctx.fill();
+    }
+  });
+  drawCherries();
+  drawLightnings();
+  drawBullets();
+}
+
+function gameLoop(ts) {
+  if(!lastTime)lastTime=ts;
+  const dt=Math.min((ts-lastTime)/1000,0.05);lastTime=ts;
+  if(gameRunning&&!quizActive&&!cherryQuizActive&&!lightningQuizActive){
+    updatePacman(dt);
+    ghosts.forEach(g=>updateGhost(g,dt));
+    checkCollisions();
+    updateCherries();
+    updateLightnings(dt);
+    updateBullets(dt);
+  }
+  draw();
+  animFrame=requestAnimationFrame(gameLoop);
+}
+
+function pacmanCaught() {
+  gameRunning=false;
+  playDeath();
+  showQuiz();
+}
+
+function showQuiz() {
+  quizActive=true;
+  stopSiren(); stopScared();
+  const box=document.getElementById('quizBox');
+  box.classList.remove('wrong-shake');
+  box.style.borderColor='#4CAF50';
+  document.getElementById('quizOverlay').classList.add('active');
+  document.getElementById('quizResult').textContent='';
+  document.getElementById('livesLost').textContent='';
+  const q=questions[Math.floor(Math.random()*questions.length)];
+  document.getElementById('questionText').textContent=q.q;
+  document.getElementById('questionHint').textContent=q.hint||'';
+  const container=document.getElementById('answersContainer');
+  container.innerHTML='';
+  [0,1,2,3].sort(()=>Math.random()-0.5).forEach(i=>{
+    const btn=document.createElement('button');
+    btn.textContent=q.a[i];
+    btn.onclick=()=>handleAnswer(btn,i===q.c,container);
+    container.appendChild(btn);
+  });
+}
+
+function handleAnswer(btn,correct,container) {
+  container.querySelectorAll('button').forEach(b=>b.onclick=null);
+  const res=document.getElementById('quizResult');
+  const lostEl=document.getElementById('livesLost');
+  const box=document.getElementById('quizBox');
+  if(correct){
+    btn.classList.add('correct');
+    res.style.color='#4CAF50';
+    res.textContent='✅ Правильно! Життя збережено! 🎮';
+    lostEl.textContent='';
+    playCorrect();
+    setTimeout(resumeGame,1100);
+  } else {
+    btn.classList.add('wrong');
+    box.classList.add('wrong-shake');
+    lives--;updateHUD();
+    res.style.color='#e94560';
+    playWrong();
+    if(lives<=0){
+      res.textContent='❌ Неправильно! Більше немає життів!';
+      setTimeout(()=>{
+        document.getElementById('quizOverlay').classList.remove('active');
+        document.getElementById('finalScore').textContent=score;
+        document.getElementById('gameOverOverlay').classList.add('active');
+      },1500);
+    } else {
+      res.textContent='❌ Неправильно!';
+      lostEl.textContent=`-1 ❤️ — залишилось: ${'❤️'.repeat(lives)}`;
+      setTimeout(resumeGame,1600);
+    }
+  }
+}
+
+function resumeGame() {
+  document.getElementById('quizOverlay').classList.remove('active');
+  quizActive=false;
+  pacman=createPacman();
+  ghosts=[0,1,2,3].map(i=>createGhost(i));
+  anyScared=false;
+  bullets=[]; bulletCooldown=0;
+  hasShotPower=false; updatePowerBar();
+  lightnings=[]; hasSpeedBoost=false; speedBoostTimer=0;
+  gameRunning=true;
+  if(!muted) startSiren();
+}
+
+startGame();
+</script>
+</body>
+</html>
