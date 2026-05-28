@@ -127,7 +127,7 @@ canvas { border: 3px solid #2121DE; border-radius: 6px; display: block; }
   <button id="muteBtn" onclick="toggleMute()">🔊 Звук</button>
 </div>
 <canvas id="gameCanvas"></canvas>
-<div id="controls">⬆⬇⬅➡ — рухатись &nbsp;|&nbsp; ПРОБІЛ — стріляти (якщо є сила) &nbsp;|&nbsp; M — звук вкл/викл</div>
+<div id="controls">⬆⬇⬅➡ або WASD — рухатись &nbsp;|&nbsp; ПРОБІЛ — стріляти (якщо є сила) &nbsp;|&nbsp; M — звук вкл/викл</div>
 <div id="powerBar"></div>
 
 <div id="cherryQuizOverlay">
@@ -975,7 +975,9 @@ function updateHUD() {
 function setDir(dx,dy) { if (!gameRunning||quizActive||cherryQuizActive||lightningQuizActive) return; pacman.nextDx=dx; pacman.nextDy=dy; }
 document.addEventListener('keydown', e => {
   const dirs={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]};
+  const wasd={KeyW:[0,-1],KeyS:[0,1],KeyA:[-1,0],KeyD:[1,0]};
   if (dirs[e.key]) { setDir(...dirs[e.key]); e.preventDefault(); }
+  else if (wasd[e.code] && !quizActive && !cherryQuizActive && !lightningQuizActive) { setDir(...wasd[e.code]); e.preventDefault(); }
   if (e.key === 'm' || e.key === 'M') { toggleMute(); }
   if (e.key === ' ' || e.code === 'Space') {
     e.preventDefault();
