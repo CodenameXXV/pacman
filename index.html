@@ -250,12 +250,28 @@ canvas { border: 3px solid #2121DE; border-radius: 6px; display: block; }
   </div>
 </div>
 
+<audio id="bgMusic" loop preload="auto"
+  src="https://github.com/CodenameXXV/pacman/raw/refs/heads/main/GO.mp3">
+</audio>
+
 <script>
+// ===================== BACKGROUND MUSIC =====================
+const bgMusic = document.getElementById('bgMusic');
+bgMusic.volume = 0.4;
+
+function ytPlay() {
+  try { bgMusic.play(); } catch(e) {}
+}
+
+function ytStop() {
+  try { bgMusic.pause(); } catch(e) {}
+}
+
 // ===================== AUDIO =====================
 let audioCtx = null;
-let muted = true;
+// За замовчуванням звук увімкнений; зберігаємо вибір юзера в localStorage
+let muted = localStorage.getItem('pacmanMuted') === 'true';
 let wakaSide = 0;
-let sirenOsc = null, sirenGain = null;
 let scaredOsc = null, scaredGain = null;
 
 function getAudio() {
@@ -265,13 +281,18 @@ function getAudio() {
 
 function toggleMute() {
   muted = !muted;
-  const btn = document.getElementById('muteBtn');
-  btn.textContent = muted ? '🔇 Тихо' : '🔊 Звук';
-  btn.classList.toggle('muted', muted);
+  localStorage.setItem('pacmanMuted', muted);
+  applyMuteUI();
   if (muted) { stopSiren(); stopScared(); }
   else if (gameRunning && !quizActive && !cherryQuizActive) {
     if (ghosts.some(g => g.scared)) startScared(); else startSiren();
   }
+}
+
+function applyMuteUI() {
+  const btn = document.getElementById('muteBtn');
+  btn.textContent = muted ? '🔇 Тихо' : '🔊 Звук';
+  btn.classList.toggle('muted', muted);
 }
 
 function beep(freq, type, duration, vol, delay = 0) {
@@ -328,44 +349,19 @@ function playEatGhost() {
   [0,1,2].forEach(i => beep(800 - i*200, 'sawtooth', 0.1, 0.2, i*0.08));
 }
 
-// Сирена привидів (фоновий звук) — постійний
+// Фоновий трек — YouTube (замість синтетичної сирени)
 function startSiren() {
-  if (muted || sirenOsc) return;
-  try {
-    const ac = getAudio();
-    sirenOsc = ac.createOscillator();
-    sirenGain = ac.createGain();
-    sirenOsc.connect(sirenGain); sirenGain.connect(ac.destination);
-    sirenOsc.type = 'sawtooth';
-    sirenGain.gain.setValueAtTime(0.04, ac.currentTime);
-    // Коливання частоти для ефекту сирени
-    sirenOsc.frequency.setValueAtTime(220, ac.currentTime);
-    sirenOsc.start();
-    // Повільна модуляція через setInterval
-    sirenOsc._interval = setInterval(() => {
-      if (!sirenOsc || muted) return;
-      try {
-        const t = ac.currentTime;
-        const f = 200 + Math.sin(Date.now() / 400) * 60;
-        sirenOsc.frequency.setTargetAtTime(f, t, 0.1);
-      } catch(e) {}
-    }, 80);
-  } catch(e) {}
+  if (muted) return;
+  ytPlay();
 }
 
 function stopSiren() {
-  if (!sirenOsc) return;
-  try {
-    clearInterval(sirenOsc._interval);
-    sirenGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
-    sirenOsc.stop(audioCtx.currentTime + 0.1);
-  } catch(e) {}
-  sirenOsc = null; sirenGain = null;
+  ytStop();
 }
 
 // Звук переляканих привидів
 function startScared() {
-  stopSiren();
+  stopSiren(); // pause YouTube during scared mode
   if (muted || scaredOsc) return;
   try {
     const ac = getAudio();
@@ -394,6 +390,8 @@ function stopScared() {
     scaredOsc.stop(audioCtx.currentTime + 0.1);
   } catch(e) {}
   scaredOsc = null; scaredGain = null;
+  // resume YouTube after scared mode ends
+  if (!muted && gameRunning) ytPlay();
 }
 
 // Смерть пакмена
@@ -1078,10 +1076,20 @@ function startGame() {
   document.getElementById('gameOverOverlay').classList.remove('active');
   document.getElementById('quizOverlay').classList.remove('active');
   lastTime=0;
-  const btn = document.getElementById('muteBtn');
-  btn.textContent = muted ? '🔇 Тихо' : '🔊 Звук';
-  btn.classList.toggle('muted', muted);
-  setTimeout(() => { if (!muted) startSiren(); }, 900);
+  applyMuteUI();
+  // Браузер дозволяє autoplay тільки після взаємодії юзера.
+  // Чекаємо першого кліку/дотику, потім запускаємо музику.
+  if (!muted) {
+    const startMusic = () => {
+      startSiren();
+      document.removeEventListener('click', startMusic);
+      document.removeEventListener('keydown', startMusic);
+      document.removeEventListener('touchstart', startMusic);
+    };
+    document.addEventListener('click', startMusic, { once: true });
+    document.addEventListener('keydown', startMusic, { once: true });
+    document.addEventListener('touchstart', startMusic, { once: true });
+  }
   requestAnimationFrame(gameLoop);
 }
 function restartGame() { if (animFrame) cancelAnimationFrame(animFrame); stopSiren(); stopScared(); startGame(); }
