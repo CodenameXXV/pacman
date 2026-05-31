@@ -250,21 +250,36 @@ canvas { border: 3px solid #2121DE; border-radius: 6px; display: block; }
   </div>
 </div>
 
-<audio id="bgMusic" loop preload="auto"
-  src="https://github.com/CodenameXXV/pacman/raw/refs/heads/main/GO.mp3">
+<audio id="bgMusic" loop preload="none"
+  src="https://raw.githubusercontent.com/CodenameXXV/pacman/refs/heads/main/GO.mp3">
 </audio>
 
 <script>
 // ===================== BACKGROUND MUSIC =====================
 const bgMusic = document.getElementById('bgMusic');
 bgMusic.volume = 0.4;
+const MUSIC_VOL_NORMAL = 0.4;
+const MUSIC_VOL_DUCK   = 0.12;
 
 function ytPlay() {
-  try { bgMusic.play(); } catch(e) {}
+  try {
+    // Потокове відтворення: не чекаємо на завантаження, грає одразу
+    bgMusic.preload = 'auto';
+    const p = bgMusic.play();
+    if (p && p.catch) p.catch(() => {});
+  } catch(e) {}
 }
 
 function ytStop() {
   try { bgMusic.pause(); } catch(e) {}
+}
+
+function musicDuck() {
+  bgMusic.volume = MUSIC_VOL_DUCK;
+}
+
+function musicFull() {
+  if (!muted) bgMusic.volume = MUSIC_VOL_NORMAL;
 }
 
 // ===================== AUDIO =====================
@@ -353,15 +368,16 @@ function playEatGhost() {
 function startSiren() {
   if (muted) return;
   ytPlay();
+  musicFull();
 }
 
 function stopSiren() {
-  ytStop();
+  musicDuck();
 }
 
 // Звук переляканих привидів
 function startScared() {
-  stopSiren(); // pause YouTube during scared mode
+  musicDuck(); // тихіше під час scared, але не зупиняємо
   if (muted || scaredOsc) return;
   try {
     const ac = getAudio();
@@ -390,13 +406,13 @@ function stopScared() {
     scaredOsc.stop(audioCtx.currentTime + 0.1);
   } catch(e) {}
   scaredOsc = null; scaredGain = null;
-  // resume YouTube after scared mode ends
-  if (!muted && gameRunning) ytPlay();
+  // Повертаємо повну гучність після scared
+  if (!muted && gameRunning) musicFull();
 }
 
 // Смерть пакмена
 function playDeath() {
-  stopSiren(); stopScared();
+  musicDuck(); stopScared();
   if (muted) return;
   const freqs = [494,440,392,349,330,294,262,220,196,165,147];
   freqs.forEach((f, i) => beep(f, 'sawtooth', 0.09, 0.2, i * 0.07));
